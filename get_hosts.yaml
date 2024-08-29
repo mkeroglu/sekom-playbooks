@@ -1,7 +1,7 @@
 ---
-- name: Fetch VMware Hosts
-  hosts: all
-  gather_facts: no
+- hosts: localhost
+  gather_facts: False
+  connection: local
   tasks:
     - name: Gather vmware host facts
       community.vmware.vmware_cluster_info:

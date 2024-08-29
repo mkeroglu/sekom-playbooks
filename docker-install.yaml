@@ -1,0 +1,239 @@
+---
+- name: Check the operating system of the server
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: CheckOS
+      include_role:
+        name: check_os
+    - name: Install required packages
+      yum:
+        name:
+          - yum-utils
+        state: present
+      when: os_family == 'RedHat' and os_version == '7'
+
+    - name: Add Docker CE repository
+      yum_repository:
+        name: docker-ce
+        description: Docker CE Repository
+        baseurl: https://download.docker.com/linux/centos/7/x86_64/
+        gpgcheck: 1
+        gpgkey: https://download.docker.com/linux/centos/gpg
+        enabled: 1
+      when: os_family == 'RedHat' and os_version == '7'
+
+    - name: Install Docker CE, CLI, and containerd
+      yum:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+      when: os_family == 'RedHat' and os_version == '7'
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+      when: os_family == 'RedHat' and os_version == '7'
+
+    - name: Verify Docker installation
+      command: docker run hello-world
+      register: docker_output
+      failed_when: "'Hello from Docker!' not in docker_output.stdout"
+      when: os_family == 'RedHat' and os_version == '7'
+
+    - name: Add user to Docker group
+      user:
+        name: "{{ ansible_user }}"
+        group: docker
+        append: yes
+      when: os_family == 'RedHat' and os_version == '7'
+      ignore_errors: yes
+
+    - name: Install required packages
+      yum:
+        name:
+          - dnf-utils
+        state: present
+      when: os_family == 'RedHat' and os_version == '8'
+
+    - name: Add Docker CE repository
+      yum_repository:
+        name: docker-ce
+        description: Docker CE Repository
+        baseurl: https://download.docker.com/linux/centos/8/x86_64/
+        gpgcheck: 1
+        gpgkey: https://download.docker.com/linux/centos/gpg
+        enabled: 1
+      when: os_family == 'RedHat' and os_version == '8'
+
+    - name: Install Docker CE, CLI, and containerd
+      yum:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+      when: os_family == 'RedHat' and os_version == '8'
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+      when: os_family == 'RedHat' and os_version == '8'
+
+    - name: Verify Docker installation
+      command: docker run hello-world
+      register: docker_output
+      failed_when: "'Hello from Docker!' not in docker_output.stdout"
+      when: os_family == 'RedHat' and os_version == '8'
+      ignore_errors: yes
+
+    - name: Add user to Docker group
+      user:
+        name: "{{ ansible_user }}"
+        group: docker
+        append: yes
+      when: os_family == 'RedHat' and os_version == '8'
+
+    - name: Ensure system is updated
+      command: yum update -y
+      when: os_family == 'RedHat' and os_version == '9'
+
+    - name: Install yum-utils
+      dnf:
+        name: yum-utils
+        state: present
+      when: os_family == 'RedHat' and os_version == '9'
+
+    - name: Add Docker repository
+      get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+      when: os_family == 'RedHat' and os_version == '9'
+
+    - name: Install Docker packages
+      dnf:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+      when: os_family == 'RedHat' and os_version == '9'
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+      when: os_family == 'RedHat' and os_version == '9'
+
+    - name: Add user to Docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+      when: os_family == 'RedHat' and os_version == '9'
+      ignore_errors: yes
+
+    - name: Verify Docker installation
+      command: docker --version
+      register: docker_version
+      when: os_family == 'RedHat' and os_version == '9'
+
+    - name: Display Docker version
+      debug:
+        msg: "Docker version: {{ docker_version.stdout }}"
+      when: os_family == 'RedHat' and os_version == '9'
+
+    - name: Ensure system is updated
+      apt:
+        update_cache: yes
+        upgrade: dist
+      when: ansible_os_family == 'Debian' and (ansible_distribution_version.startswith('20.04') or ansible_distribution_version.startswith('22.04'))
+
+    - name: Install apt-transport-https
+      apt:
+        name: apt-transport-https
+        state: present
+      when: ansible_os_family == 'Debian' and (ansible_distribution_version.startswith('20.04') or ansible_distribution_version.startswith('22.04'))
+
+    - name: Add Docker repository GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      when: ansible_os_family == 'Debian' and (ansible_distribution_version.startswith('20.04') or ansible_distribution_version.startswith('22.04'))
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: 'deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable'
+        state: present
+      when: ansible_os_family == 'Debian' and (ansible_distribution_version.startswith('20.04') or ansible_distribution_version.startswith('22.04'))
+
+    - name: Install Docker packages
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+      when: ansible_os_family == 'Debian' and (ansible_distribution_version.startswith('20.04') or ansible_distribution_version.startswith('22.04'))
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+      when: ansible_os_family == 'Debian' and (ansible_distribution_version.startswith('20.04') or ansible_distribution_version.startswith('22.04'))
+
+    - name: Add user to Docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+      when: ansible_os_family == 'Debian' and (ansible_distribution_version.startswith('20.04') or ansible_distribution_version.startswith('22.04'))
+      ignore_errors: yes
+
+    - name: Verify Docker installation
+      command: docker --version
+      register: docker_version
+      when: ansible_os_family == 'Debian' and (ansible_distribution_version.startswith('20.04') or ansible_distribution_version.startswith('22.04'))
+
+    - name: Display Docker version
+      debug:
+        msg: "Docker version: {{ docker_version.stdout }}"
+      when: ansible_os_family == 'Debian' and (ansible_distribution_version.startswith('20.04') or ansible_distribution_version.startswith('22.04'))
+
+    - name: Ensure curl is installed
+      yum:
+        name: curl
+        state: present
+
+    - name: Get Docker Compose version
+      command: >
+        curl --silent "https://api.github.com/repos/docker/compose/releases/latest"
+      register: compose_version_response
+
+    - name: Set Docker Compose version fact
+      set_fact:
+        compose_version: "{{ (compose_version_response.stdout | from_json).tag_name | regex_replace('^v', '') }}"
+
+    - name: Download Docker Compose binary
+      get_url:
+        url: "https://github.com/docker/compose/releases/download/v{{ compose_version }}/docker-compose-{{ ansible_system | lower }}-{{ ansible_architecture }}"
+        dest: /usr/local/bin/docker-compose
+        mode: 'a+x'
+
+    - name: Verify Docker Compose installation
+      command: docker-compose --version
+      register: compose_version_check
+
+    - name: Show Docker Compose version
+      debug:
+        msg: "Docker Compose version: {{ compose_version_check.stdout }}"

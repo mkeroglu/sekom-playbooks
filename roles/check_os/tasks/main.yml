@@ -1,0 +1,12 @@
+---
+- name: Get Family
+  ansible.builtin.set_fact:
+    os_family: "{{ ansible_facts['os_family'] }}"
+
+- name: Get Version
+  ansible.builtin.set_fact:
+    os_version: "{{ ansible_facts['distribution_major_version'] }}"
+
+- name: Print message if RedHat family
+  debug:
+    msg: "Operating System: {{ os_family }} : {{ os_version }}"

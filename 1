@@ -1,0 +1,16 @@
+---
+- name: Fetch VMware Hosts
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Get list of ESXi hosts from vCenter
+      community.vmware.vmware_vm_facts:
+        hostname: "vsphere.sekom.com.tr"
+        username: "administrator@vsphere.local"
+        password: "Sa.463!Pot*572"
+        validate_certs: no
+      register: vm_info
+
+    - name: Print host information
+      debug:
+        var: vm_info

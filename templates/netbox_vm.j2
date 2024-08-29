@@ -1,0 +1,13 @@
+
+{% for vm in vm_info.virtual_machines %}
+
+- name: {{ vm.guest_name }}
+  cluster: vSphere
+  device: {{ vm.esxi_hostname }}
+  state: {% if vm.power_state == 'poweredOn' %} active {% else %} passive {% endif %}
+
+  {% if vm.ip_address %}
+ip_address: {{ vm.ip_address }}
+  {% endif %}
+
+{% endfor %}

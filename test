@@ -1,0 +1,16 @@
+---
+- name: Fetch VMware Hosts
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Attach a new available IP of 192.168.1.0/24 to GigabitEthernet1 (NetBox 2.9+)
+      netbox.netbox.netbox_ip_address:
+        netbox_url: http://netbox.tools01.devops.sekom.com.tr
+        netbox_token: "{{ netbox_token }}"
+        state: present
+        data:
+          address: "10.106.31.123/32"
+          assigned_object:
+            virtual_machine: "ALMA"
+            name: "vm-eth0"
+          comments: "Added via Ansible playbook"

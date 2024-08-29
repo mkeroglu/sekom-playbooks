@@ -1,0 +1,77 @@
+---
+- name: Fetch VMware Hosts
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Gather vmware host facts
+      community.vmware.vmware_cluster_info:
+        hostname: vsphere.sekom.com.tr
+        username: administrator@vsphere.local
+        password: Sa.463!Pot*572
+        validate_certs: false
+        datacenter: Ankara
+          #schema: vsphere
+      register: host_factsi
+      delegate_to: localhost
+
+    - name: Print host information
+      debug:
+        var: host_factsi
+
+    - name: Gather VMware VM facts
+      community.vmware.vmware_vm_info:
+        hostname: vsphere.sekom.com.tr
+        username: administrator@vsphere.local
+        password: Sa.463!Pot*572
+        validate_certs: no
+      register: vm_info
+
+    - name: Print VM names
+      debug:
+        var: vm_info
+
+    - name: Print VM names
+      debug:
+        msg: "name: {{ item.guest_name }}, cluster: {{ item.cluster }}, device: {{ item.esxi_hostname }}"
+      with_items: "{{ vm_info.virtual_machines }}"
+
+    - name: Save VM details to a file
+      template:
+        src: ./templates/netbox_vm.j2
+        dest: /vm_list.yml
+
+
+          #    - name: Create virtual machine with tags
+          #      netbox.netbox.netbox_virtual_machine:
+          #        netbox_url: http://netbox.tools01.devops.sekom.com.tr
+          #        netbox_token: "{{ netbox_token }}"
+          #        data:
+          #          name: "{{ item.guest_name }}"
+          #          cluster: "vSphere"
+          #          device: "{{ item.esxi_hostname }}"
+          #          status: "{{ 'active' if item.power_state == 'poweredOn' else 'offline' }}" 
+          #        state: present
+          #      with_items: "{{ vm_info.virtual_machines }}"
+
+          #    - name: Create interface within NetBox with only required information
+          #      netbox.netbox.netbox_vm_interface:
+          #        netbox_url: http://netbox.tools01.devops.sekom.com.tr
+          #        netbox_token: "{{ netbox_token }}"
+          #        data:
+          #          virtual_machine: "{{ item.guest_name }}"
+          #          name: vm-eth0
+          #        state: present
+          #      with_items: "{{ vm_info.virtual_machines }}"
+
+    - name: Attach a new available IP of 192.168.1.0/24 to GigabitEthernet1 (NetBox 2.9+)
+      netbox.netbox.netbox_ip_address:
+        netbox_url: http://netbox.tools01.devops.sekom.com.tr
+        netbox_token: "{{ netbox_token }}"
+        state: present
+        data:
+          address: "{{ item.ip_address }}/32"
+          assigned_object:
+            virtual_machine: "{{ item.guest_name }}"
+            name: "vm-eth0"
+          comments: "Added via Ansible playbook"
+      with_items: "{{ vm_info.virtual_machines }}"
